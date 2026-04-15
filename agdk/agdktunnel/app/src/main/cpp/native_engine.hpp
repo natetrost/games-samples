@@ -24,6 +24,8 @@
 
 using namespace base_game_framework;
 
+struct android_app;
+
 struct NativeEngineSavedState {
     bool mHasFocus;
 };
@@ -44,8 +46,10 @@ public:
 
     virtual void ScreenSizeChanged() = 0;
 
+#if !defined(BGF_SDL3)
     // returns the JNI environment
     JNIEnv *GetJniEnv();
+#endif
 
     // returns the Android app object
     android_app *GetAndroidApp();
@@ -53,13 +57,14 @@ public:
     // returns the (singleton) instance
     static NativeEngine *GetInstance();
 
+#if !defined(BGF_SDL3)
     // This is the env for the app thread. It's different to the main thread.
     JNIEnv *GetAppJniEnv();
+#endif
 
 protected:
     bool ProcessCookedEvent(struct CookedEvent *event);
 
-    // variables to track Android lifecycle:
     // variables to track Android lifecycle:
     bool mHasFocus, mHasStarted, mDisplayInitialized;
 
@@ -81,11 +86,13 @@ protected:
     // additional saved state
     struct NativeEngineSavedState mState;
 
+#if !defined(BGF_SDL3)
     // JNI environment
     JNIEnv *mJniEnv;
 
     // JNI env for the app native glue thread
     JNIEnv *mAppJniEnv;
+#endif
 
     base_game_framework::DisplayManager::SwapchainFrameHandle mSwapchainFrameHandle;
 

@@ -24,6 +24,10 @@
 #define VK_USE_PLATFORM_ANDROID_KHR 1
 #define VK_KHR_android_surface 1
 #include "android/platform_types_android.h"
+#elif defined BGF_SDL3
+#define BGF_DISPLAY_MANAGER_VULKAN 1
+#define VK_USE_PLATFORM_METAL_EXT 1
+#include "sdl3/platform_types_sdl3.h"
 #endif
 
 #endif // BASEGAMEFRAMEWORK_PLATFORM_DEFINES_H_

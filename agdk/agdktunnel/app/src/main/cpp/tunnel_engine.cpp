@@ -20,11 +20,15 @@
 
 #include "filesystem_manager.h"
 #include "platform_event_loop.h"
+#if !defined(BGF_SDL3)
 #include "android/platform_util_android.h"
+#endif
 #include "simple_renderer/renderer_interface.h"
 
+#if !defined(BGF_SDL3)
 #include "game-activity/GameActivity.h"
 #include "gni/gni.h"
+#endif
 
 static TunnelEngine *_singleton = NULL;
 
@@ -47,12 +51,17 @@ TunnelEngine::TunnelEngine(struct android_app *app) : NativeEngine(app) {
   MY_ASSERT(_singleton == NULL);
   _singleton = this;
 
+#if defined(BGF_SDL3)
+  mGameAssetManager = new GameAssetManager();
+#else
   mGameAssetManager = new GameAssetManager(app->activity->assetManager,
                                            app->activity->vm,
                                            app->activity->javaGameActivity);
+#endif
   mTextureManager = NULL;
   mGfxManager = NULL;
 
+#if !defined(BGF_SDL3)
   // Initialize the GNI runtime. This function needs to be called before any
   // call to the wrapper code (the VibrationHelper depends on this).
   GniCore_init(app->activity->vm, app->activity->javaGameActivity);
@@ -65,7 +74,9 @@ TunnelEngine::TunnelEngine(struct android_app *app) : NativeEngine(app) {
                                          String_getJniReference(vibrationManagerString));
   String_destroy(vibratorString);
   String_destroy(vibrationManagerString);
+#endif
 
+#if !defined(BGF_SDL3)
   // Set fields retrieved through JNI
   // Find the Java class
   jclass activityClass = GetJniEnv()->GetObjectClass(mApp->activity->javaGameActivity);
@@ -75,15 +86,20 @@ TunnelEngine::TunnelEngine(struct android_app *app) : NativeEngine(app) {
       GetJniEnv()->GetMethodID(activityClass, "isPlayGamesServicesLinked", "()Z");
   mCloudSaveEnabled = (bool) GetJniEnv()->CallBooleanMethod(
       mApp->activity->javaGameActivity, isPlayGamesServicesLinkedID);
+#else
+  mCloudSaveEnabled = false;
+#endif
 
   char *internalStorage = (char *)FilesystemManager::GetInstance().GetRootPath(
   FilesystemManager::kRootPathInternalStorage).c_str();
   mDataStateMachine = new DataLoaderStateMachine(mCloudSaveEnabled, internalStorage);
 
+#if !defined(BGF_SDL3)
   GameActivity_setImeEditorInfo(app->activity, TYPE_CLASS_TEXT,
                                 IME_ACTION_NONE, IME_FLAG_NO_FULLSCREEN);
 
   WelcomeScene::InitAboutText(GetJniEnv(), app->activity->javaGameActivity);
+#endif
 
   for (int i = 0; i < OURKEY_COUNT; ++i) {
     mJoyKeyState[i] = false;
@@ -103,9 +119,11 @@ TunnelEngine::~TunnelEngine() {
     mGfxManager = NULL;
     simple_renderer::Renderer::ShutdownInstance();
   }
+#if !defined(BGF_SDL3)
   if (mVibrationHelper != NULL) {
     delete mVibrationHelper;
   }
+#endif
   if (mGameAssetManager != NULL) {
     delete mGameAssetManager;
   }
@@ -120,7 +138,11 @@ void TunnelEngine::GameLoop() {
   while (!mQuitting) {
     if (!mDisplayInitialized) {
       PlatformEventLoop::GetInstance().PollEvents();
+#if !defined(BGF_SDL3)
       if (mApp->window == NULL || !AttemptDisplayInitialization()) {
+#else
+      if (!AttemptDisplayInitialization()) {
+#endif
         usleep(1000);
         continue;
       }
@@ -129,6 +151,7 @@ void TunnelEngine::GameLoop() {
       PlatformEventLoop::GetInstance().PollEvents();
       PollGameController();
       mGameAssetManager->UpdateGameAssetManager();
+#if !defined(BGF_SDL3)
       if (mApp->textInputState) {
         struct CookedEvent ev;
         ev.type = COOKED_EVENT_TYPE_TEXT_INPUT;
@@ -136,6 +159,7 @@ void TunnelEngine::GameLoop() {
         ProcessCookedEvent(&ev);
         mApp->textInputState = 0;
       }
+#endif
 
       if (IsAnimating()) {
         DoFrame();
@@ -179,14 +203,17 @@ void TunnelEngine::ScreenSizeChanged() {
 }
 
 void TunnelEngine::SetInputSdkContext(int context) {
+#if !defined(BGF_SDL3)
   jclass activityClass = GetJniEnv()->GetObjectClass(mApp->activity->javaGameActivity);
   jmethodID setInputContextID =
       GetJniEnv()->GetMethodID(activityClass, "setInputContext", "(I)V");
   GetJniEnv()->CallVoidMethod(
       mApp->activity->javaGameActivity, setInputContextID, (jint)context);
+#endif
 }
 
 DataLoaderStateMachine *TunnelEngine::BeginSavedGameLoad() {
+#if !defined(BGF_SDL3)
   if (IsCloudSaveEnabled()) {
     ALOGI("Scheduling task to load cloud data through JNI");
     jclass activityClass = GetJniEnv()->GetObjectClass(mApp->activity->javaGameActivity);
@@ -196,6 +223,9 @@ DataLoaderStateMachine *TunnelEngine::BeginSavedGameLoad() {
   } else {
     mDataStateMachine->LoadLocalProgress();
   }
+#else
+  mDataStateMachine->LoadLocalProgress();
+#endif
   return mDataStateMachine;
 }
 
@@ -215,13 +245,16 @@ bool TunnelEngine::SaveProgress(int level, bool forceSave) {
   // Save state locally and to the cloud if it is enabled
   ALOGI("Saving progress to LOCAL FILE: level %d", level);
   mDataStateMachine->SaveLocalProgress(level);
+#if !defined(BGF_SDL3)
   if (IsCloudSaveEnabled()) {
     ALOGI("Saving progress to the cloud: level %d", level);
     SaveGameToCloud(level);
   }
+#endif
   return true;
 }
 
+#if !defined(BGF_SDL3)
 void TunnelEngine::SaveGameToCloud(int level) {
   MY_ASSERT(GetJniEnv() && IsCloudSaveEnabled());
   ALOGI("Scheduling task to save cloud data through JNI");
@@ -231,6 +264,7 @@ void TunnelEngine::SaveGameToCloud(int level) {
   GetJniEnv()->CallVoidMethod(
       mApp->activity->javaGameActivity, saveCloudCheckpointID, (jint)level);
 }
+#endif
 
 void TunnelEngine::ReportJoyKeyState(int keyCode, bool state) {
   bool wentDown = !mJoyKeyState[keyCode] && state;
@@ -296,6 +330,7 @@ void TunnelEngine::PollGameController() {
   }
 }
 
+#if !defined(BGF_SDL3)
 // TODO: rename the methods according to your package name
 extern "C" jboolean Java_com_google_sample_agdktunnel_PGSManager_isLoadingWorkInProgress(
     JNIEnv */*env*/, jobject /*pgsManager*/) {
@@ -344,3 +379,4 @@ extern "C" void Java_com_google_sample_agdktunnel_PGSManager_savedStateLoadingCo
   TunnelEngine *instance = TunnelEngine::GetInstance();
   instance->GetDataStateMachine()->savedStateLoadingCompleted(level);
 }
+#endif

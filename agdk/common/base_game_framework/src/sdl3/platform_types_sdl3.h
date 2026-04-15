@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Android Open Source Project
+ * Copyright 2026 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef agdktunnel_jniutil_hpp
-#define agdktunnel_jniutil_hpp
+#ifndef BASEGAMEFRAMEWORK_PLATFORM_TYPES_SDL3_H_
+#define BASEGAMEFRAMEWORK_PLATFORM_TYPES_SDL3_H_
 
-#if defined(BGF_ANDROID)
-#include <jni.h>
+struct SDL_Window;
 
-struct JniSetup {
-    jclass clazz; // activity class
-    jobject thiz; // activity object
-    JNIEnv *env;  // jni env
+namespace base_game_framework {
+
+struct PlatformEventLoopData {
+  // SDL3 event loop might not need specific data held here if we use global polling,
+  // but we can store the window pointer if needed.
+  SDL_Window *window = nullptr;
 };
-#endif
 
-// Does JNI setup (if needed) and returns a struct with convenience objects.
-struct JniSetup *GetJNISetup();
+struct PlatformInitParameters {
+  SDL_Window *window = nullptr;
+};
 
-#endif
+} // namespace base_game_framework
+
+#endif // BASEGAMEFRAMEWORK_PLATFORM_TYPES_SDL3_H_

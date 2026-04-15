@@ -58,7 +58,11 @@ static constexpr VkSamplerAddressMode kVkWrapT[Texture::kWrapT_Count] = {
 static VkFormat GetTextureVkFormat(const Texture::TextureCreationParams& params) {
   VkFormat texture_format = VK_FORMAT_R8G8B8A8_UNORM;
   if (params.format == Texture::kTextureFormat_RGB_888) {
+#if defined(__APPLE__)
+    texture_format = VK_FORMAT_R8G8B8A8_UNORM; // MoltenVK doesn't support RGB8
+#else
     texture_format = VK_FORMAT_R8G8B8_UNORM;
+#endif
   } else if (params.format == Texture::kTextureFormat_ASTC) {
     switch (params.compression_type) {
       case Texture::kTextureCompression_ASTC_LDR_4x4:
@@ -130,7 +134,15 @@ TextureVk::TextureVk(const Texture::TextureCreationParams& params)
   // Create a staging buffer for the texture data
   VkBufferCreateInfo create_info = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
   // TODO: only supports one mip level right now
-  create_info.size = params.texture_sizes[0];
+  
+  bool force_rgba = false;
+#if defined(__APPLE__)
+  if (params.format == Texture::kTextureFormat_RGB_888) {
+    force_rgba = true;
+  }
+#endif
+
+  create_info.size = force_rgba ? (params.base_width * params.base_height * 4) : params.texture_sizes[0];
   create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
   VmaAllocationCreateInfo staging_create_info = {};
   staging_create_info.usage = VMA_MEMORY_USAGE_AUTO;
@@ -144,7 +156,19 @@ TextureVk::TextureVk(const Texture::TextureCreationParams& params)
                                              &staging_buffer, &staging_alloc, &staging_info);
   RENDERER_CHECK_VK(staging_alloc_result, "vmaCreateBuffer (staging)");
   RENDERER_ASSERT(staging_info.pMappedData != nullptr)
-  memcpy(staging_info.pMappedData, params.texture_data, params.texture_sizes[0]);
+  
+  if (force_rgba) {
+    uint8_t* dst = static_cast<uint8_t*>(staging_info.pMappedData);
+    const uint8_t* src = static_cast<const uint8_t*>(params.texture_data);
+    for (uint32_t i = 0; i < params.base_width * params.base_height; ++i) {
+      dst[i*4 + 0] = src[i*3 + 0];
+      dst[i*4 + 1] = src[i*3 + 1];
+      dst[i*4 + 2] = src[i*3 + 2];
+      dst[i*4 + 3] = 255; // Opaque alpha
+    }
+  } else {
+    memcpy(staging_info.pMappedData, params.texture_data, params.texture_sizes[0]);
+  }
 
   VkImageCreateInfo image_create_info = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
   image_create_info.imageType = VK_IMAGE_TYPE_2D;

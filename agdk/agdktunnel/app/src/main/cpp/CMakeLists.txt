@@ -13,16 +13,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-cmake_minimum_required(VERSION 3.4.1)
+cmake_minimum_required(VERSION 3.5)
 project(agdktunnel)
 
 file(GLOB_RECURSE native_wrappers CONFIGURE_DEPENDS "native_wrappers/*.cpp" "native_wrappers/*.cc")
 
+if(ANDROID)
 find_package(oboe REQUIRED CONFIG)
 find_package(game-activity REQUIRED CONFIG)
 find_package(games-controller REQUIRED CONFIG)
 find_package(games-frame-pacing REQUIRED CONFIG)
 find_package(com.google.android.gms.gni.c REQUIRED CONFIG)
+endif()
+
+if(APPLE)
+  add_definitions("-DBGF_SDL3")
+  set(SDL3_PATH "/Users/natetrost/Library/Frameworks/SDL3.xcframework/macos-arm64_x86_64")
+  
+  # Use framework search path so #include <SDL3/SDL.h> works!
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -F${SDL3_PATH}")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -F${SDL3_PATH}")
+  
+  set(MOLTENVK_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../third_party/MoltenVK")
+  include_directories(${MOLTENVK_PATH}/include)
+endif()
 
 # Set the base dir
 set(GAMESDK_BASE_DIR "../../../../..")
@@ -54,6 +68,7 @@ set(THIRD_PARTY_DIR ../../../../../third_party)
 add_subdirectory(${THIRD_PARTY_DIR}/glm ${CMAKE_CURRENT_BINARY_DIR}/glm)
 
 # TODO: migrate to imported cmake file for commonality with other samples
+if(ANDROID)
 set(BGF_SRCS
      ${BGF_SRC_DIR}/debug_manager.cpp
      ${BGF_SRC_DIR}/display_manager.cpp
@@ -77,9 +92,26 @@ set(BGF_SRCS
      ${BGF_SRC_DIR}/vulkan/graphics_api_vulkan.cpp
      ${BGF_SRC_DIR}/vulkan/graphics_api_vulkan_loader.cpp
      ${BGF_SRC_DIR}/vulkan/graphics_api_vulkan_utils.cpp)
+else()
+set(BGF_SRCS
+     ${BGF_SRC_DIR}/debug_manager.cpp
+     ${BGF_SRC_DIR}/display_manager.cpp
+     ${BGF_SRC_DIR}/system_event_manager.cpp
+     ${BGF_SRC_DIR}/user_input_manager.cpp
+     ${BGF_SRC_DIR}/graphics_api_features.cpp
+     ${BGF_SRC_DIR}/sdl3/basegameframework_init_sdl3.cpp
+     ${BGF_SRC_DIR}/sdl3/filesystem_manager_sdl3.cpp
+     ${BGF_SRC_DIR}/sdl3/platform_event_loop_sdl3.cpp
+     ${BGF_SRC_DIR}/sdl3/platform_util_sdl3.cpp
+     ${BGF_SRC_DIR}/sdl3/platform_util_vulkan_sdl3.cpp
+     ${BGF_SRC_DIR}/vulkan/graphics_api_vulkan.cpp
+     ${BGF_SRC_DIR}/vulkan/graphics_api_vulkan_loader.cpp
+     ${BGF_SRC_DIR}/vulkan/graphics_api_vulkan_utils.cpp)
+endif()
 
 
 # TODO: migrate to imported cmake file for commonality with other samples
+if(ANDROID)
 set(SIMPLE_RENDERER_SRCS
      ${SIMPLE_RENDERER_DIR}/renderer_debug_gles.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_debug_vk.cpp
@@ -102,8 +134,24 @@ set(SIMPLE_RENDERER_SRCS
      ${SIMPLE_RENDERER_DIR}/renderer_vertex_buffer_gles.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_vertex_buffer_vk.cpp
      ${SIMPLE_RENDERER_DIR}/renderer_vk.cpp)
+else()
+set(SIMPLE_RENDERER_SRCS
+     ${SIMPLE_RENDERER_DIR}/renderer_debug_vk.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_index_buffer_vk.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_interface.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_render_pass_vk.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_render_state_vk.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_resources.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_shader_program_vk.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_texture_vk.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_uniform_buffer.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_uniform_buffer_vk.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_vertex_buffer_vk.cpp
+     ${SIMPLE_RENDERER_DIR}/renderer_vk.cpp)
+endif()
 
 # now build app's shared lib
+if(ANDROID)
 add_library(${CMAKE_PROJECT_NAME} SHARED
      ${BGF_SRCS}
      ${SIMPLE_RENDERER_SRCS}
@@ -138,6 +186,56 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
      welcome_scene.cpp
      ${COMMON_SRC_DIR}/Versions.cpp
      )
+else()
+add_executable(${CMAKE_PROJECT_NAME}
+     ${BGF_SRCS}
+     ${SIMPLE_RENDERER_SRCS}
+     mac_main.cpp
+     anim.cpp
+     ascii_to_geom.cpp
+     dialog_scene.cpp
+     game_asset_manager_mac.cpp
+     game_asset_manifest.cpp
+     gfx_manager.cpp
+     input_util.cpp
+     loader_scene.cpp
+     data_loader_machine.cpp
+     native_engine.cpp
+     obstacle.cpp
+     obstacle_generator.cpp
+     play_scene.cpp
+     scene.cpp
+     scene_manager.cpp
+     sfxman.cpp
+     shape_renderer.cpp
+     tex_quad.cpp
+     text_renderer.cpp
+     texture_manager.cpp
+     tunnel_engine.cpp
+     ui_scene.cpp
+     util.cpp
+     welcome_scene.cpp
+     )
+endif()
+
+if(APPLE)
+  set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
+      MACOSX_BUNDLE TRUE
+      BUILD_WITH_INSTALL_RPATH TRUE
+      INSTALL_RPATH "@executable_path/../Frameworks"
+  )
+  
+  # Post-build command to copy SDL3 framework and MoltenVK dylib
+  add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/../Frameworks
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+          "${SDL3_PATH}/SDL3.framework"
+          $<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/../Frameworks/SDL3.framework
+      COMMAND ${CMAKE_COMMAND} -E copy
+          "${MOLTENVK_PATH}/dynamic/dylib/macOS/libMoltenVK.dylib"
+          $<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/../Frameworks/libMoltenVK.dylib
+  )
+endif()
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
      ${THIRD_PARTY_DIR}/glm/glm
@@ -151,6 +249,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
      ${CMAKE_CURRENT_SOURCE_DIR}/data)
 
 # add lib dependencies
+if(ANDROID)
 target_link_libraries(${CMAKE_PROJECT_NAME}
      PUBLIC com.google.android.gms.gni.c::gni_shared
      android
@@ -164,10 +263,18 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
      GLESv3
      glm
      log)
+else()
+target_link_libraries(${CMAKE_PROJECT_NAME}
+     "-F${SDL3_PATH} -framework SDL3"
+     "${MOLTENVK_PATH}/dynamic/dylib/macOS/libMoltenVK.dylib"
+     glm
+)
+endif()
 
 include_directories(./native_wrappers/c)
 include_directories(./native_wrappers/cpp)
 
+if(ANDROID)
 if("${USE_ASSET_PACKS}" STREQUAL "false")
     add_definitions("-DNO_ASSET_PACKS")
 else()
@@ -177,4 +284,7 @@ else()
     target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${PLAYCORE_LOCATION}/include)
 
     target_link_libraries(${CMAKE_PROJECT_NAME} playcore)
+endif()
+else()
+    add_definitions("-DNO_ASSET_PACKS")
 endif()

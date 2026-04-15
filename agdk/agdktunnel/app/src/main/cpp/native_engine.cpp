@@ -21,7 +21,9 @@
 #include "native_engine.hpp"
 #include "welcome_scene.hpp"
 
+#if !defined(BGF_SDL3)
 #include "android/platform_util_android.h"
+#endif
 #include "simple_renderer/renderer_interface.h"
 
 using namespace base_game_framework;
@@ -44,13 +46,20 @@ static NativeEngineSavedState appState = {false};
 NativeEngine::NativeEngine(struct android_app *app) {
     ALOGI("NativeEngine: initializing.");
     mApp = app;
-    mHasFocus = mHasStarted = mDisplayInitialized = false;
+#if defined(BGF_SDL3)
+    mHasFocus = true; // Assume focus on desktop startup
+#else
+    mHasFocus = false;
+#endif
+    mHasStarted = mDisplayInitialized = false;
     mHasSwapchain = false;
     mQuitting = false;
     mSurfWidth = mSurfHeight = 0;
     mScreenDensity = 0;
+#if !defined(BGF_SDL3)
     mJniEnv = NULL;
     mAppJniEnv = NULL;
+#endif
     memset(&mState, 0, sizeof(mState));
     mSwapchainFrameHandle = DisplayManager::kInvalid_swapchain_handle;
     mSwapchainHandle = DisplayManager::kInvalid_swapchain_handle;
@@ -79,10 +88,12 @@ NativeEngine::NativeEngine(struct android_app *app) {
                                                   this, std::placeholders::_1,
                                                   std::placeholders::_2),nullptr);
 
+#if defined(ANDROID)
     if (app->savedState != NULL) {
         // we are starting with previously saved state -- restore it
         mState = *(struct NativeEngineSavedState *) app->savedState;
     }
+#endif
 }
 
 NativeEngine::~NativeEngine() {
@@ -168,17 +179,29 @@ bool NativeEngine::CreateSwapchain() {
                                                  DisplayManager::kDisplay_Pixel_Format_RGBA8,
                                                  DisplayManager::kDisplay_Stencil_Format_D24S8_Packed);
 
+
+
     bool found_display_format = false;
-    for (auto iter = swapchain_configurations->display_formats.begin();
-         iter != swapchain_configurations->display_formats.end(); ++iter) {
-        if (*iter == display_format) {
-            found_display_format = true;
-            break;
+    DisplayManager::DisplayFormat best_format = display_format;
+    for (const auto& fmt : swapchain_configurations->display_formats) {
+        if (fmt.display_color_space == swapchain_color_space &&
+            (fmt.display_pixel_format == DisplayManager::kDisplay_Pixel_Format_RGBA8 ||
+             fmt.display_pixel_format == DisplayManager::kDisplay_Pixel_Format_BGRA8)) {
+            if (fmt.display_depth_format == DisplayManager::kDisplay_Depth_Format_D24S8_Packed) {
+                best_format = fmt;
+                found_display_format = true;
+                break;
+            }
+            if (fmt.display_depth_format != DisplayManager::kDisplay_Depth_Format_None) {
+                best_format = fmt;
+                found_display_format = true;
+            }
         }
     }
 
     if (found_display_format) {
-        mDisplayFormat = display_format;
+        mDisplayFormat = best_format;
+        display_format = best_format;
         const DisplayManager::InitSwapchainResult swapchain_result = display_manager.InitSwapchain(
             display_format, swapchain_configurations->display_resolutions[0],
             swapchain_configurations->display_swap_intervals[0],
@@ -217,6 +240,7 @@ bool NativeEngine::CreateSwapchain() {
     return true;
 }
 
+#if !defined(BGF_SDL3)
 JNIEnv *NativeEngine::GetJniEnv() {
     if (!mJniEnv) {
         ALOGI("Attaching current thread to JNI.");
@@ -244,6 +268,7 @@ JNIEnv *NativeEngine::GetAppJniEnv() {
 
     return mAppJniEnv;
 }
+#endif
 
 bool NativeEngine::PrepareToRender() {
     // Early out conditions
@@ -412,6 +437,7 @@ void NativeEngine::LifecycleEvent(const SystemEventManager::LifecycleEvent lifec
         case SystemEventManager::kLifecycleStop:
         break;
         case SystemEventManager::kLifecycleQuit:
+            ALOGI("NativeEngine: received kLifecycleQuit");
             mQuitting = true;
         break;
         case SystemEventManager::kLifecycleSaveState:

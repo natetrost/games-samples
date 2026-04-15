@@ -19,6 +19,7 @@
 
 #include "engine.hpp"
 #include "our_key_codes.hpp"
+#include "platform_keycodes.h"
 
 // event type
 #define COOKED_EVENT_TYPE_JOY 0

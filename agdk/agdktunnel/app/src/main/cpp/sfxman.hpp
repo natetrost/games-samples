@@ -17,7 +17,9 @@
 #ifndef agdktunnel_sfxman_hpp
 #define agdktunnel_sfxman_hpp
 
+#if !defined(BGF_SDL3)
 #include <oboe/Oboe.h>
+#endif
 
 #include "engine.hpp"
 
@@ -28,10 +30,16 @@
  * only one sound can be playing at any given time. This is not a problematic
  * limitation for this simple sample but, needless to say, doesn't scale well
  * to a more complex game. */
+#if !defined(BGF_SDL3)
 class SfxMan : public oboe::AudioStreamCallback {
+#else
+class SfxMan {
+#endif
 private:
     bool mInitOk;
+#if !defined(BGF_SDL3)
     std::shared_ptr<oboe::AudioStream> mAudioStream;
+#endif
 public:
     SfxMan();
 
@@ -63,9 +71,11 @@ public:
     // a tone right now).
     bool IsIdle();
 
+#if !defined(BGF_SDL3)
     // Oboe AudioStreamDataCallback function
     oboe::DataCallbackResult
     onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames);
+#endif
 };
 
 #endif

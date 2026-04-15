@@ -99,10 +99,10 @@ SimpleGeom *AsciiArtToGeom(const char *art, float scale) {
   GEOM_DEBUG("Total vertices: %d, total indices %d", vertices, indices);
 
   // allocate arrays for the vertices and lines
-  const int VERTICES_STRIDE = sizeof(GLfloat) * 7;
-  const int VERTICES_COLOR_OFFSET = sizeof(GLfloat) * 3;
-  GLfloat *verticesArray = new GLfloat[vertices * VERTICES_STRIDE];
-  GLushort *indicesArray = new GLushort[indices];
+  const int VERTICES_STRIDE = sizeof(float) * 7;
+  const int VERTICES_COLOR_OFFSET = sizeof(float) * 3;
+  float *verticesArray = new float[vertices * VERTICES_STRIDE];
+  uint16_t *indicesArray = new uint16_t[indices];
   vertices = indices = 0; // current count of vertices and lines
 
   float left = (-cols / 2) * scale;
@@ -190,8 +190,8 @@ SimpleGeom *AsciiArtToGeom(const char *art, float scale) {
       GEOM_DEBUG("End vertex is at %d,%d, index %d", end_r, end_c,
                  v[end_r][end_c] & VERTEX_INDEX_MASK);
 
-      indicesArray[indices] = static_cast<GLushort>(v[start_r][start_c] & VERTEX_INDEX_MASK);
-      indicesArray[indices + 1] = static_cast<GLushort>(v[end_r][end_c] & VERTEX_INDEX_MASK);
+      indicesArray[indices] = static_cast<uint16_t>(v[start_r][start_c] & VERTEX_INDEX_MASK);
+      indicesArray[indices + 1] = static_cast<uint16_t>(v[end_r][end_c] & VERTEX_INDEX_MASK);
       indices += 2;
       GEOM_DEBUG("We now have %d indices.", indices);
     }

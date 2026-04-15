@@ -21,6 +21,8 @@
 
 #if defined BGF_ANDROID
 #include "android/platform_keycodes_android.h"
+#elif defined BGF_SDL3
+#include "sdl3/platform_keycodes_sdl3.h"
 #endif
 
 #endif // BASEGAMEFRAMEWORK_PLATFORM_KEYCODES_H_

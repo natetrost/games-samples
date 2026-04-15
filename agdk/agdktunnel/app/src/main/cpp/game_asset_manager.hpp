@@ -17,7 +17,9 @@
 #ifndef agdktunnel_gameassetmanager_hpp
 #define agdktunnel_gameassetmanager_hpp
 
+#if !defined(BGF_SDL3)
 #include <jni.h>
+#endif
 #include <stddef.h>
 #include "loading_thread.hpp"
 #include "util.hpp"
@@ -71,7 +73,11 @@ public:
         GAMEASSET_ERROR
     };
 
+#if !defined(BGF_SDL3)
     GameAssetManager(AAssetManager *assetManager, JavaVM *jvm, jobject android_context);
+#else
+    GameAssetManager();
+#endif
 
     ~GameAssetManager();
 

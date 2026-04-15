@@ -21,9 +21,13 @@
 
 #include "gfx_manager.hpp"
 #include "game_asset_manager.hpp"
+#if !defined(BGF_SDL3)
 #include "vibration_helper.hpp"
+#endif
 #include "data_loader_machine.hpp"
+#if !defined(BGF_SDL3)
 #include "java/lang/string.h"
+#endif
 #include "texture_manager.hpp"
 
 #define INPUT_ACTION_COUNT 6
@@ -54,8 +58,10 @@ class TunnelEngine : public NativeEngine {
   // returns the texture manager instance
   TextureManager *GetTextureManager() { return mTextureManager; }
 
+#if !defined(BGF_SDL3)
   // returns the vibration helper instance
   VibrationHelper *GetVibrationHelper() { return mVibrationHelper; }
+#endif
 
   // Load data from cloud if it is enabled, or from local data otherwise
   DataLoaderStateMachine *BeginSavedGameLoad();
@@ -94,8 +100,10 @@ class TunnelEngine : public NativeEngine {
   // Gfx resource manager instance
   GfxManager *mGfxManager;
 
+#if !defined(BGF_SDL3)
   // Vibration helper instance
   VibrationHelper *mVibrationHelper;
+#endif
 
   // state machine instance to query the status of the current load of data
   DataLoaderStateMachine *mDataStateMachine;

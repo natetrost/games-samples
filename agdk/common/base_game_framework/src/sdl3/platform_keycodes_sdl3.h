@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Android Open Source Project
+ * Copyright 2026 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef agdktunnel_jniutil_hpp
-#define agdktunnel_jniutil_hpp
+#ifndef BASEGAMEFRAMEWORK_PLATFORM_KEYCODES_SDL3_H_
+#define BASEGAMEFRAMEWORK_PLATFORM_KEYCODES_SDL3_H_
 
-#if defined(BGF_ANDROID)
-#include <jni.h>
+// Mimic Android keycodes for the game's input_util.cpp
+#define AKEYCODE_UNKNOWN 0
+#define AKEYCODE_A 29
+#define AKEYCODE_D 32
+#define AKEYCODE_S 47
+#define AKEYCODE_W 51
+#define AKEYCODE_ENTER 66
+#define AKEYCODE_ESCAPE 111
 
-struct JniSetup {
-    jclass clazz; // activity class
-    jobject thiz; // activity object
-    JNIEnv *env;  // jni env
-};
-#endif
-
-// Does JNI setup (if needed) and returns a struct with convenience objects.
-struct JniSetup *GetJNISetup();
-
-#endif
+#endif // BASEGAMEFRAMEWORK_PLATFORM_KEYCODES_SDL3_H_

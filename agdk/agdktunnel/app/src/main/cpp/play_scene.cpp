@@ -27,6 +27,9 @@
 #include "welcome_scene.hpp"
 
 #include "data/ascii_art.inl"
+#if defined(BGF_SDL3)
+#include <OpenGL/gl.h>
+#endif
 #include "data/cube_geom.inl"
 #include "data/strings.inl"
 #include "data/tunnel_geom.inl"
@@ -190,6 +193,8 @@ void PlayScene::OnStartGraphics() {
     for (int wallIndex = 0; wallIndex < MAX_WALL_TEXTURES; ++wallIndex) {
 #if defined NO_ASSET_PACKS
         snprintf(textureName, 64, "no_asset_packs_textures/wall%d.ktx", wallIndex + 1);
+#elif defined(BGF_SDL3)
+        snprintf(textureName, 64, "textures/wall%d.ktx", wallIndex + 1);
 #else
         snprintf(textureName, 64, "textures/wall%d.tex", wallIndex + 1);
 #endif
@@ -730,7 +735,9 @@ void PlayScene::DetectCollisions(float previousY) {
     int row = o->GetRowAt(mPlayerPos.z);
 
     if (o->grid[col][row]) {
+#if !defined(BGF_SDL3)
         TunnelEngine::GetInstance()->GetVibrationHelper()->DoVibrateEffect();
+#endif
 #ifndef GOD_MODE
         // crashed against obstacle
         mLives--;

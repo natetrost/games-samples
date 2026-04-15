@@ -15,7 +15,10 @@
  */
 
 #include "renderer_interface.h"
+#include "platform_defines.h"
+#if defined(BGF_ANDROID)
 #include "renderer_gles.h"
+#endif
 #include "renderer_vk.h"
 
 namespace simple_renderer {
@@ -36,9 +39,12 @@ void Renderer::SetSwapchainHandle(
 
 Renderer &Renderer::GetInstance() {
   if (!instance_) {
+#if defined(BGF_ANDROID)
     if (renderer_api_ == Renderer::kAPI_GLES) {
       instance_ = std::unique_ptr<Renderer>(new RendererGLES());
-    } else if (renderer_api_ == Renderer::kAPI_Vulkan) {
+    } else
+#endif
+    if (renderer_api_ == Renderer::kAPI_Vulkan) {
       instance_ = std::unique_ptr<Renderer>(new RendererVk());
     }
   }

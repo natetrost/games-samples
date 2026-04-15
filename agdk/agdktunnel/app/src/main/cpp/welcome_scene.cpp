@@ -24,13 +24,19 @@
 #include "blurb.inl"
 #include "strings.inl"
 
+#if !defined(BGF_SDL3)
 #include "game-text-input/gametextinput.h"
+#endif
 
 // from samples/common/include
+#if !defined(BGF_SDL3)
 #include "Versions.h"
+#endif
 
 #include <string>
+#if !defined(BGF_SDL3)
 #include <android/window.h>
+#endif
 
 #define TITLE_POS center, 0.15f
 #define TITLE_FONT_SCALE 1.0f
@@ -66,6 +72,7 @@
 
 static std::string sNameEdit(S_NAME_EDIT);
 
+#if !defined(BGF_SDL3)
 OwnedGameTextInputState::OwnedGameTextInputState(const std::string &initial_string) : owned_string(
         initial_string) {
     inner.text_UTF8 = owned_string.data();
@@ -82,6 +89,7 @@ OwnedGameTextInputState &OwnedGameTextInputState::operator=(const GameTextInputS
     inner.text_UTF8 = owned_string.data();
     return *this;
 }
+#endif
 
 WelcomeScene::WelcomeScene() : mTextInputState(INITIAL_NAME) {
 }
@@ -97,6 +105,7 @@ void WelcomeScene::RenderBackground() {
 
 static std::string sAboutStartText;
 
+#if !defined(BGF_SDL3)
 void WelcomeScene::InitAboutText(JNIEnv* env, jobject context) {
     std::stringstream aboutStream;
     aboutStream << BLURB_ABOUT;
@@ -108,8 +117,10 @@ void WelcomeScene::InitAboutText(JNIEnv* env, jobject context) {
     aboutStream << "\nDevice OS Version: " << android_get_device_api_level();
     sAboutStartText = aboutStream.str();
 }
+#endif
 
 std::string WelcomeScene::AboutMessage() {
+#if !defined(BGF_SDL3)
     std::stringstream aboutStream;
     aboutStream << sAboutStartText;
     // Add window insets to help debugging
@@ -126,6 +137,9 @@ std::string WelcomeScene::AboutMessage() {
     aboutStream << "Waterfall: (" << insets.left << ", " << insets.right << ", "
                 << insets.top << ", " << insets.bottom << ")";
     return aboutStream.str();
+#else
+    return "AGDKTunnel macOS port";
+#endif
 }
 
 void WelcomeScene::OnButtonClicked(int id) {
@@ -142,6 +156,7 @@ void WelcomeScene::OnButtonClicked(int id) {
         std::string aboutText = AboutMessage();
         mgr->RequestNewScene((new DialogScene())->SetText(aboutText.c_str())->SetSingleButton(S_OK,
                 DialogScene::ACTION_RETURN));
+#if !defined(BGF_SDL3)
     } else if (id == mNameEdit->GetId()) {
         auto activity = NativeEngine::GetInstance()->GetAndroidApp()->activity;
         // NB: the UI is resized when the IME is shown and OnCreateWidgets is called again.
@@ -161,9 +176,14 @@ void WelcomeScene::OnButtonClicked(int id) {
     } else if (id == mQuitButtonId) {
         auto activity = NativeEngine::GetInstance()->GetAndroidApp()->activity;
         GameActivity_finish(activity);
+#else
+    } else if (id == mQuitButtonId) {
+        exit(0);
+#endif
     }
 }
 
+#if !defined(BGF_SDL3)
 void WelcomeScene::OnTextInput() {
     auto activity = NativeEngine::GetInstance()->GetAndroidApp()->activity;
     GameActivity_getTextInputState(activity, [](void *context, const GameTextInputState *state) {
@@ -179,6 +199,11 @@ void WelcomeScene::OnTextInput() {
                         "WelcomeScene", "IME insets: left=%d right=%d top=%d bottom=%d",
                         insets.left, insets.right, insets.top, insets.bottom);
 }
+#else
+void WelcomeScene::OnTextInput() {
+    // Stub for macOS
+}
+#endif
 
 void WelcomeScene::DoFrame() {
     // update widget states based on signed-in status

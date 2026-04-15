@@ -218,7 +218,7 @@ void LoaderScene::DoFrame() {
 
         int loadingPercentage = static_cast<int>(completedLoad * 100 / totalLoad);
         char progressString[64];
-        sprintf(progressString, "%s... %d%%", S_LOADING, loadingPercentage);
+        snprintf(progressString, sizeof(progressString), "%s... %d%%", S_LOADING, loadingPercentage);
         mLoadingWidget->SetText(progressString);
     }
 

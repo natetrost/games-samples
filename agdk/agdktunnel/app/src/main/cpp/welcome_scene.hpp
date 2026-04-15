@@ -24,6 +24,7 @@
 #include "ui_scene.hpp"
 #include "util.hpp"
 
+#if !defined(BGF_SDL3)
 struct OwnedGameTextInputState {
     OwnedGameTextInputState(const std::string &initial_string);
 
@@ -32,6 +33,12 @@ struct OwnedGameTextInputState {
     GameTextInputState inner;
     std::string owned_string;
 };
+#else
+struct OwnedGameTextInputState {
+    OwnedGameTextInputState(const std::string &initial_string) : owned_string(initial_string) {}
+    std::string owned_string;
+};
+#endif
 
 /* The "welcome scene" (main menu) */
 class WelcomeScene : public UiScene {
@@ -67,8 +74,10 @@ public:
 
     virtual void DoFrame() override;
 
+#if !defined(BGF_SDL3)
     // Static info, including app and sdk versions.
     static void InitAboutText(JNIEnv* env, jobject context);
+#endif
 
  private:
     // Complete about text, including insets.

@@ -17,6 +17,10 @@
 #include "tex_quad.hpp"
 #include "gfx_manager.hpp"
 
+#if defined(BGF_SDL3)
+#include <OpenGL/gl.h>
+#endif
+
 using namespace simple_renderer;
 
 static void _put_vertex(float *v, float x, float y, float tex_u, float tex_v) {

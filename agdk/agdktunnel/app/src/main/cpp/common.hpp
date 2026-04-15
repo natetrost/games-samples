@@ -17,13 +17,17 @@
 #ifndef agdktunnel_common_hpp
 #define agdktunnel_common_hpp
 
+#include "platform_defines.h"
+
+#if defined(BGF_ANDROID)
 #include <EGL/egl.h>
 #include <GLES3/gl3.h>
 #include <jni.h>
-#include <errno.h>
 #include <android/sensor.h>
 #include <android/log.h>
 #include "game-activity/native_app_glue/android_native_app_glue.h"
+#endif
+#include <errno.h>
 #include <memory>
 #include <unistd.h>
 #include <stdlib.h>

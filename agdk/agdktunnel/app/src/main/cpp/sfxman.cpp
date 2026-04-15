@@ -34,6 +34,7 @@ SfxMan *SfxMan::GetInstance() {
 }
 
 SfxMan::SfxMan() {
+#if !defined(BGF_SDL3)
     oboe::AudioStreamBuilder audioStreamBuilder;
     audioStreamBuilder.setChannelCount(oboe::ChannelCount::Mono);
     audioStreamBuilder.setDataCallback(this);
@@ -59,14 +60,19 @@ SfxMan::SfxMan() {
     } else {
         ALOGE("Failed to create audio stream. Error: %s", oboe::convertToText(result));
     }
+#else
+    mInitOk = false;
+#endif
 }
 
 SfxMan::~SfxMan() {
+#if !defined(BGF_SDL3)
     if (mInitOk) {
         mAudioStream->stop();
         mAudioStream->close();
         mInitOk = false;
     }
+#endif
 }
 
 bool SfxMan::IsIdle() {
@@ -193,6 +199,7 @@ void SfxMan::PlayTone(const char *tone) {
     _frameCount = total_samples;
 }
 
+#if !defined(BGF_SDL3)
 oboe::DataCallbackResult
 SfxMan::onAudioReady(oboe::AudioStream */*audioStream*/, void *audioData, int32_t numFrames) {
     if (_frameCount > 0) {
@@ -223,3 +230,4 @@ SfxMan::onAudioReady(oboe::AudioStream */*audioStream*/, void *audioData, int32_
 
     return oboe::DataCallbackResult::Continue;
 }
+#endif

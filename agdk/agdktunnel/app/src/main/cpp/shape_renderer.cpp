@@ -18,6 +18,10 @@
 #include "gfx_manager.hpp"
 #include "util.hpp"
 
+#if defined(BGF_SDL3)
+#include <OpenGL/gl.h>
+#endif
+
 using namespace simple_renderer;
 
 // geometry

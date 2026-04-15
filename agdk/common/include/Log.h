@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include "platform_defines.h"
+
+#if defined(BGF_ANDROID)
 #include <android/log.h>
 
 #define ALOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__);
@@ -25,4 +28,19 @@
 #define ALOGV(...)
 #else
 #define ALOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__);
+#endif
+
+#else // macOS / SDL3
+
+#include <stdio.h>
+
+#define ALOGE(...) { printf("ERROR [%s]: ", LOG_TAG); printf(__VA_ARGS__); printf("\n"); }
+#define ALOGW(...) { printf("WARN [%s]: ", LOG_TAG); printf(__VA_ARGS__); printf("\n"); }
+#define ALOGI(...) { printf("INFO [%s]: ", LOG_TAG); printf(__VA_ARGS__); printf("\n"); }
+#ifdef NDEBUG
+#define ALOGV(...)
+#else
+#define ALOGV(...) { printf("VERBOSE [%s]: ", LOG_TAG); printf(__VA_ARGS__); printf("\n"); }
+#endif
+
 #endif

@@ -66,10 +66,14 @@ static const char *GetTrivialFragShaderSourceGLES() {
 static void LoadSPIRVAsset(const char* asset_filename, void** asset_ptr, size_t* asset_size) {
   GameAssetManager* asset_manager = TunnelEngine::GetInstance()->GetGameAssetManager();
   *asset_size = asset_manager->GetGameAssetSize(asset_filename);
+  ALOGI("LoadSPIRVAsset: %s, size: %lu", asset_filename, (unsigned long)*asset_size);
   if (*asset_size > 0) {
     *asset_ptr = malloc(*asset_size);
-    MY_ASSERT(asset_manager->LoadGameAsset(asset_filename, *asset_size, *asset_ptr));
+    bool success = asset_manager->LoadGameAsset(asset_filename, *asset_size, *asset_ptr);
+    ALOGI("LoadSPIRVAsset: loaded %s, success: %d", asset_filename, success);
+    MY_ASSERT(success);
   } else {
+    ALOGE("LoadSPIRVAsset: asset not found or empty: %s", asset_filename);
     MY_ASSERT(false);
   }
 }
@@ -145,6 +149,7 @@ void GfxManager::CreateShaderPrograms(bool useVulkan) {
     mOurShaderProgram = renderer.CreateShaderProgram(ourShaderParams);
     free(ourShaderParams.vertex_shader_data);
     free(ourShaderParams.fragment_shader_data);
+    ALOGI("Created shader programs successfully");
   } else {
     ShaderProgram::ShaderProgramCreationParams trivialShaderParams = {
         (void*) GetTrivialFragShaderSourceGLES(),

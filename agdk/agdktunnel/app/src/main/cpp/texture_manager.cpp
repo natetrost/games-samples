@@ -20,6 +20,10 @@
 #include "tunnel_engine.hpp"
 #include "simple_renderer/renderer_interface.h"
 
+#if defined(BGF_SDL3)
+#include <OpenGL/gl.h>
+#endif
+
 using namespace simple_renderer;
 
 enum TextureFileFormat {
